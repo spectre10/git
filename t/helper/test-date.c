@@ -126,9 +126,9 @@ int cmd__date(int argc UNUSED, const char **argv)
 	else if (!strcmp(*argv, "getnanos"))
 		getnanos(argv+1);
 	else if (!strcmp(*argv, "is64bit"))
-		return sizeof(timestamp_t) == 8 ? 0 : 1;
+		return !check_prereq_TIME_IS_64BIT();
 	else if (!strcmp(*argv, "time_t-is64bit"))
-		return sizeof(time_t) == 8 ? 0 : 1;
+		return !check_prereq_TIME_T_IS_64BIT();
 	else
 		usage(usage_msg);
 	return 0;

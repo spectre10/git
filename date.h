@@ -70,4 +70,10 @@ void datestamp(struct strbuf *out);
 timestamp_t approxidate_careful(const char *, int *);
 int date_overflows(timestamp_t date);
 time_t tm_to_time_t(const struct tm *tm);
+static inline int check_prereq_TIME_IS_64BIT(void) {
+	return sizeof(timestamp_t) == 8;
+}
+static inline int check_prereq_TIME_T_IS_64BIT(void) {
+	return sizeof(time_t) == 8;
+}
 #endif
