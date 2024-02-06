@@ -1691,6 +1691,7 @@ static int checkout_main(int argc, const char **argv, const char *prefix,
 			 struct branch_info *new_branch_info)
 {
 	int parseopt_flags = 0;
+	int unborn_and_unspecified = 0;
 
 	opts->overwrite_ignore = 1;
 	opts->prefix = prefix;
@@ -1754,12 +1755,6 @@ static int checkout_main(int argc, const char **argv, const char *prefix,
 	}
 	if (opts->checkout_index < 0 || opts->checkout_worktree < 0)
 		BUG("these flags should be non-negative by now");
-	/*
-	 * convenient shortcut: "git restore --staged [--worktree]" equals
-	 * "git restore --staged [--worktree] --source HEAD"
-	 */
-	if (!opts->from_treeish && opts->checkout_index)
-		opts->from_treeish = "HEAD";
 
 	/*
 	 * From here on, new_branch will contain the branch to be checked out,
@@ -1783,6 +1778,18 @@ static int checkout_main(int argc, const char **argv, const char *prefix,
 		if (!argv0 || !argv0[1])
 			die(_("missing branch name; try -%c"), cb_option);
 		opts->new_branch = argv0 + 1;
+	}
+
+	/*
+	 * convenient shortcut: "git restore --staged [--worktree]" equals
+	 * "git restore --staged [--worktree] --source HEAD"
+	 */
+	if (!opts->from_treeish && opts->checkout_index) {
+		struct object_id oid;
+		opts->from_treeish = "HEAD";
+
+		if(repo_get_oid(the_repository, opts->from_treeish, &oid))
+			unborn_and_unspecified = 1;
 	}
 
 	/*
@@ -1812,7 +1819,13 @@ static int checkout_main(int argc, const char **argv, const char *prefix,
 	} else if (!opts->accept_ref && opts->from_treeish) {
 		struct object_id rev;
 
-		if (repo_get_oid_mb(the_repository, opts->from_treeish, &rev))
+		/*
+		 * when the branch is unborn and no revision is given, use
+		 * empty tree as source
+		 */
+		if(unborn_and_unspecified)
+			oidcpy(&rev, the_hash_algo->empty_tree);
+		else if (repo_get_oid_mb(the_repository, opts->from_treeish, &rev))
 			die(_("could not resolve %s"), opts->from_treeish);
 
 		setup_new_branch_info_and_source_tree(new_branch_info,
