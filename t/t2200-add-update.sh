@@ -65,6 +65,11 @@ test_expect_success 'update did not touch untracked files' '
 	test_must_be_empty out
 '
 
+test_expect_success 'error out when given untracked path' '
+	test_must_fail git add -u dir2/other 2>err &&
+	test_grep -e "error: pathspec .dir2/other. did not match any file(s) known to git" err
+'
+
 test_expect_success 'cache tree has not been corrupted' '
 
 	git ls-files -s |

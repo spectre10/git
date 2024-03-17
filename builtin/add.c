@@ -24,6 +24,7 @@
 #include "strvec.h"
 #include "submodule.h"
 #include "add-interactive.h"
+#include "sparse-index.h"
 
 static const char * const builtin_add_usage[] = {
 	N_("git add [<options>] [--] <pathspec>..."),
@@ -536,6 +537,21 @@ int cmd_add(int argc, const char **argv, const char *prefix)
 			}
 		}
 
+		if (take_worktree_changes && pathspec.nr) {
+			int i, ret;
+			char *ps_matched = xcalloc(pathspec.nr, 1);
+
+			/* TODO: audit for interaction with sparse-index. */
+			ensure_full_index(&the_index);
+			for (i = 0; i < the_index.cache_nr; i++)
+				ce_path_match(&the_index, the_index.cache[i],
+					      &pathspec, ps_matched);
+
+			ret = report_path_error(ps_matched, &pathspec);
+			free(ps_matched);
+			if (ret)
+				exit(1);
+		}
 
 		if (only_match_skip_worktree.nr) {
 			advise_on_updating_sparse_paths(&only_match_skip_worktree);
