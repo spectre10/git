@@ -441,6 +441,21 @@ static const char *prepare_index(const char **argv, const char *prefix,
 	 * (B) on failure, rollback the real index.
 	 */
 	if (all || (also && pathspec.nr)) {
+		if (!all) {
+			int i, ret;
+			char *ps_matched = xcalloc(pathspec.nr, 1);
+
+			/* TODO: audit for interaction with sparse-index. */
+			ensure_full_index(&the_index);
+			for (i = 0; i < the_index.cache_nr; i++)
+				ce_path_match(&the_index, the_index.cache[i],
+					      &pathspec, ps_matched);
+
+			ret = report_path_error(ps_matched, &pathspec);
+			free(ps_matched);
+			if (ret)
+				exit(1);
+		}
 		repo_hold_locked_index(the_repository, &index_lock,
 				       LOCK_DIE_ON_ERROR);
 		add_files_to_cache(the_repository, also ? prefix : NULL,
