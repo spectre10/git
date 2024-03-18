@@ -6,15 +6,15 @@ license that can be found in the LICENSE file or at
 https://developers.google.com/open-source/licenses/bsd
 */
 
-#include "block.h"
+#include "reftable/block.h"
 
-#include "system.h"
-#include "blocksource.h"
-#include "basics.h"
-#include "constants.h"
-#include "record.h"
-#include "test_framework.h"
-#include "reftable-tests.h"
+#include "reftable/system.h"
+#include "reftable/blocksource.h"
+#include "reftable/basics.h"
+#include "reftable/constants.h"
+#include "reftable/record.h"
+#include "reftable/reftable-error.h"
+#include "test-lib.h"
 
 static void test_block_read_write(void)
 {
@@ -45,7 +45,7 @@ static void test_block_read_write(void)
 	rec.u.ref.refname = "";
 	rec.u.ref.value_type = REFTABLE_REF_DELETION;
 	n = block_writer_add(&bw, &rec);
-	EXPECT(n == REFTABLE_API_ERROR);
+	check_int(n, ==, REFTABLE_API_ERROR);
 
 	for (i = 0; i < N; i++) {
 		char name[100];
@@ -59,11 +59,11 @@ static void test_block_read_write(void)
 		n = block_writer_add(&bw, &rec);
 		rec.u.ref.refname = NULL;
 		rec.u.ref.value_type = REFTABLE_REF_DELETION;
-		EXPECT(n == 0);
+		check_int(n, ==, 0);
 	}
 
 	n = block_writer_finish(&bw);
-	EXPECT(n > 0);
+	check_int(n, >, 0);
 
 	block_writer_release(&bw);
 
@@ -73,11 +73,11 @@ static void test_block_read_write(void)
 
 	while (1) {
 		int r = block_iter_next(&it, &rec);
-		EXPECT(r >= 0);
+		check_int(r, >=, 0);
 		if (r > 0) {
 			break;
 		}
-		EXPECT_STREQ(names[j], rec.u.ref.refname);
+		check_str(names[j], rec.u.ref.refname);
 		j++;
 	}
 
@@ -90,20 +90,20 @@ static void test_block_read_write(void)
 		strbuf_addstr(&want, names[i]);
 
 		n = block_reader_seek(&br, &it, &want);
-		EXPECT(n == 0);
+		check_int(n, ==, 0);
 
 		n = block_iter_next(&it, &rec);
-		EXPECT(n == 0);
+		check_int(n, ==, 0);
 
-		EXPECT_STREQ(names[i], rec.u.ref.refname);
+		check_str(names[i], rec.u.ref.refname);
 
 		want.len--;
 		n = block_reader_seek(&br, &it, &want);
-		EXPECT(n == 0);
+		check_int(n, ==, 0);
 
 		n = block_iter_next(&it, &rec);
-		EXPECT(n == 0);
-		EXPECT_STREQ(names[10 * (i / 10)], rec.u.ref.refname);
+		check_int(n, ==, 0);
+		check_str(names[10 * (i / 10)], rec.u.ref.refname);
 
 		block_iter_close(&it);
 	}
@@ -116,8 +116,8 @@ static void test_block_read_write(void)
 	}
 }
 
-int block_test_main(int argc, const char *argv[])
+int cmd_main(int argc, const char **argv)
 {
-	RUN_TEST(test_block_read_write);
-	return 0;
+	TEST(test_block_read_write(), "test_block_read_write");
+	return test_done();
 }

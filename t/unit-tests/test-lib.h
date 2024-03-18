@@ -146,4 +146,10 @@ int test__run_end(int, const char *, const char *, ...);
 void test__todo_begin(void);
 int test__todo_end(const char *, const char *, int);
 
+/* Like strbuf_add, but suitable for passing to reftable_new_writer
+ */
+ssize_t strbuf_add_void(void *b, const void *data, size_t sz);
+
+int noop_flush(void *);
+
 #endif /* TEST_LIB_H */
