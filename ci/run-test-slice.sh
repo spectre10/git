@@ -17,6 +17,7 @@ handle_failed_tests
 
 # We only have one unit test at the moment, so run it in the first slice
 if [ "$1" == "0" ] ; then
+	export TZ=EST5
 	group "Run unit tests" make --quiet -C t unit-tests-prove
 fi
 
