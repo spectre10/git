@@ -65,7 +65,10 @@ int oid_pos(const struct object_id *oid, const void *table, size_t nr,
 	if (nr != 1) {
 		size_t lov, hiv, miv, ofs;
 
-		for (ofs = 0; ofs < the_hash_algo->rawsz - 2; ofs += 2) {
+		if (oid->algo == GIT_HASH_UNKNOWN)
+			die("algo field not set in object_id");
+
+		for (ofs = 0; ofs < hash_algos[oid->algo].rawsz - 2; ofs += 2) {
 			lov = take2(fn(0, table), ofs);
 			hiv = take2(fn(nr - 1, table), ofs);
 			miv = take2(oid, ofs);
