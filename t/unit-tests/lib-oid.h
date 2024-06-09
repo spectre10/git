@@ -13,5 +13,11 @@
  * environment variable.
  */
 int get_oid_arbitrary_hex(const char *s, struct object_id *oid);
+/*
+ * Returns one of GIT_HASH_{SHA1, SHA256, UNKNOWN} based on the value of
+ * GIT_TEST_DEFAULT_HASH. The fallback value in case of absence of
+ * GIT_TEST_DEFAULT_HASH is GIT_HASH_SHA1.
+ */
+int init_hash_algo(void);
 
 #endif /* LIB_OID_H */
