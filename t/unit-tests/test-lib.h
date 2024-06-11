@@ -159,4 +159,5 @@ int test__run_end(int, const char *, const char *, ...);
 void test__todo_begin(void);
 int test__todo_end(const char *, const char *, int);
 
+const char *make_relative(const char *location);
 #endif /* TEST_LIB_H */

@@ -1,4 +1,5 @@
 #include "test-lib.h"
+#include "lib-repo.h"
 
 enum result {
 	RESULT_NONE,
@@ -29,7 +30,7 @@ static struct {
  */
 #include "dir.h"
 
-static const char *make_relative(const char *location)
+const char *make_relative(const char *location)
 {
 	static char prefix[] = __FILE__, buf[PATH_MAX], *p;
 	static size_t prefix_len;
@@ -129,6 +130,7 @@ int test_done(void)
 
 	if (ctx.lazy_plan)
 		test_plan(ctx.count);
+	test_delete_repo();
 
 	return ctx.failed;
 }
