@@ -139,6 +139,16 @@ int check_str_loc(const char *loc, const char *check,
 #define TEST_TODO(check) \
 	(test__todo_begin(), test__todo_end(TEST_LOCATION(), #check, check))
 
+/*
+ * check_prereq() should return 1 (true) in case the prerequisite is satisfied
+ * and 0 (false) otherwise
+ */
+enum prerequisite {
+	MINGW = 0
+};
+
+int check_prereq(enum prerequisite p);
+
 /* Private helpers */
 
 #define TEST__STR(x) #x

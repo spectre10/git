@@ -418,3 +418,20 @@ int check_str_loc(const char *loc, const char *check,
 
 	return ret;
 }
+
+static int check_mingw(void)
+{
+#if defined(__MINGW32__) || defined(__MINGW64)
+	return 1;
+#endif
+	return 0;
+}
+
+int check_prereq(enum prerequisite p)
+{
+	switch (p) {
+	case MINGW:
+		return check_mingw();
+	}
+	return 0;
+}
