@@ -159,4 +159,7 @@ int test__run_end(int, const char *, const char *, ...);
 void test__todo_begin(void);
 int test__todo_end(const char *, const char *, int);
 
+/* fills the strbuf with the absolute path to 't/unit-tests' directory */
+int strbuf_unit_test_dir_absolute(struct strbuf *buf);
+
 #endif /* TEST_LIB_H */

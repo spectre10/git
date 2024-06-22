@@ -1,4 +1,5 @@
 #include "test-lib.h"
+#include "abspath.h"
 
 enum result {
 	RESULT_NONE,
@@ -417,4 +418,21 @@ int check_str_loc(const char *loc, const char *check,
 	}
 
 	return ret;
+}
+
+int strbuf_unit_test_dir_absolute(struct strbuf *buf)
+{
+	char *cwd_basename;
+	if (!check_int(strbuf_getcwd(buf), ==, 0))
+		return -1;
+
+	cwd_basename = basename(buf->buf);
+	if (!check(!strcmp(cwd_basename, "t") || !strcmp(cwd_basename, "bin"))) {
+		test_msg("BUG: unit-tests should be run from either 't/' or 't/unit-tests/bin' directory");
+		return -1;
+	}
+
+	strbuf_strip_suffix(buf, "/unit-tests/bin");
+	strbuf_add_real_path(buf, "/unit-tests");
+	return 0;
 }
