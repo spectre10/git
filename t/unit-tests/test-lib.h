@@ -139,6 +139,12 @@ int check_str_loc(const char *loc, const char *check,
 #define TEST_TODO(check) \
 	(test__todo_begin(), test__todo_end(TEST_LOCATION(), #check, check))
 
+enum prerequisite {
+	POSIXPERM = 1 << 0,
+	SANITY = 1 << 1
+};
+int check_prereqs(unsigned int p);
+
 /* Private helpers */
 
 #define TEST__STR(x) #x

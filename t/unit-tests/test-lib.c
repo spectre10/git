@@ -418,3 +418,27 @@ int check_str_loc(const char *loc, const char *check,
 
 	return ret;
 }
+
+static unsigned int check_posixperm(void)
+{
+#if defined(GIT_WINDOWS_NATIVE) || defined(__CYGWIN__) || \
+	defined(__MINGW32__) || defined(__MINGW64__)
+	return 0;
+#endif
+	return 1;
+}
+
+static unsigned int check_sanity(void){
+	mkdir("SANETESTD.1", 0777);
+	mkdir("SANETESTD.2", 0777);
+	return 0;
+}
+
+int check_prereqs(unsigned int p){
+	int ret = 0;
+	if (p & POSIXPERM)
+		ret |= check_posixperm();
+	if (p & SANITY)
+		ret |= check_sanity();
+	return ret;
+}
