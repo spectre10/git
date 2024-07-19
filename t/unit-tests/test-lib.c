@@ -1,4 +1,5 @@
 #include "test-lib.h"
+#include "lib-repo.h"
 
 enum result {
 	RESULT_NONE,
@@ -129,6 +130,9 @@ int test_done(void)
 
 	if (ctx.lazy_plan)
 		test_plan(ctx.count);
+
+	if (!ctx.failed)
+		test_repo_cleanup();
 
 	return ctx.failed;
 }
