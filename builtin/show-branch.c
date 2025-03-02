@@ -1,3 +1,4 @@
+#include <stdio.h>
 #define USE_THE_REPOSITORY_VARIABLE
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
@@ -13,6 +14,7 @@
 #include "strvec.h"
 #include "object-name.h"
 #include "parse-options.h"
+#include "ewah/ewok.h"
 
 #include "dir.h"
 #include "commit-slab.h"
@@ -44,6 +46,9 @@ static struct strvec default_args = STRVEC_INIT;
 #define MAX_REVS	(FLAG_BITS - REV_SHIFT) /* should not exceed bits_per_int - REV_SHIFT */
 
 #define DEFAULT_REFLOG	4
+
+define_commit_slab(commit_flags, struct bitmap);
+static struct commit_flags commit_flags;
 
 static const char *get_color_code(int idx)
 {
@@ -328,7 +333,8 @@ static void show_one_commit(struct commit *commit, int no_name)
 	strbuf_release(&pretty);
 }
 
-static char *ref_name[MAX_REVS + 1];
+static char **ref_name;
+static int ref_name_alloc;
 static int ref_name_cnt;
 
 static const char *find_digit_prefix(const char *s, int *v)
@@ -402,12 +408,7 @@ static int append_ref(const char *refname, const struct object_id *oid,
 			if (!strcmp(refname, ref_name[i]))
 				return 0;
 	}
-	if (MAX_REVS <= ref_name_cnt) {
-		warning(Q_("ignoring %s; cannot handle more than %d ref",
-			   "ignoring %s; cannot handle more than %d refs",
-			   MAX_REVS), refname, MAX_REVS);
-		return 0;
-	}
+	ALLOC_GROW(ref_name, ref_name_cnt + 1, ref_name_alloc);
 	ref_name[ref_name_cnt++] = xstrdup(refname);
 	ref_name[ref_name_cnt] = NULL;
 	return 0;
@@ -556,8 +557,7 @@ static void append_one_rev(const char *av)
 		match_ref_slash = count_slashes(av);
 		refs_for_each_ref(get_main_ref_store(the_repository),
 				  append_matching_ref, NULL);
-		if (saved_matches == ref_name_cnt &&
-		    ref_name_cnt < MAX_REVS)
+		if (saved_matches == ref_name_cnt)
 			error(_("no matching refs with %s"), av);
 		sort_ref_range(saved_matches, ref_name_cnt);
 		return;
@@ -856,6 +856,9 @@ int cmd_show_branch(int ac,
 		goto out;
 	}
 
+	/* We have the list of refs and count to show */
+	init_commit_flags_with_stride(&commit_flags, ref_name_cnt);
+
 	for (num_rev = 0; ref_name[num_rev]; num_rev++) {
 		struct object_id revkey;
 		unsigned int flag = 1u << (num_rev + REV_SHIFT);
@@ -1000,5 +1003,6 @@ out:
 	free_commit_list(list);
 	free(args_copy);
 	free(head);
+	FREE_AND_NULL(ref_name);
 	return ret;
 }

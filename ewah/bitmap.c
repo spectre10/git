@@ -138,6 +138,14 @@ void bitmap_or(struct bitmap *self, const struct bitmap *other)
 		self->words[i] |= other->words[i];
 }
 
+void bitmap_or_word(struct bitmap *self, eword_t word)
+{
+	size_t i;
+
+	bitmap_grow(self, 1);
+	self->words[0] |= word;
+}
+
 int ewah_bitmap_is_subset(struct ewah_bitmap *self, struct bitmap *other)
 {
 	struct ewah_iterator it;

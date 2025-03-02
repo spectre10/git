@@ -194,6 +194,7 @@ struct bitmap *ewah_to_bitmap(struct ewah_bitmap *ewah);
 void bitmap_and_not(struct bitmap *self, struct bitmap *other);
 void bitmap_or_ewah(struct bitmap *self, struct ewah_bitmap *other);
 void bitmap_or(struct bitmap *self, const struct bitmap *other);
+void bitmap_or_word(struct bitmap *self, eword_t word);
 
 size_t bitmap_popcount(struct bitmap *self);
 size_t ewah_bitmap_popcount(struct ewah_bitmap *self);
