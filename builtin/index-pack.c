@@ -71,7 +71,7 @@ struct base_data {
 	/* Not initialized by make_base(). */
 	struct list_head list;
 	void *data;
-	unsigned long size;
+	size_t size;
 };
 
 /*
@@ -258,7 +258,7 @@ static unsigned check_object(struct object *obj)
 		return 0;
 
 	if (!(obj->flags & FLAG_CHECKED)) {
-		unsigned long size;
+		size_t size;
 		int type = odb_read_object_info(the_repository->objects,
 						&obj->oid, &size);
 		if (type <= 0)
@@ -905,7 +905,7 @@ static void sha1_object(const void *data, struct object_entry *obj_entry,
 	if (collision_test_needed) {
 		void *has_data;
 		enum object_type has_type;
-		unsigned long has_size;
+		size_t has_size;
 		read_lock();
 		has_type = odb_read_object_info(the_repository->objects, oid, &has_size);
 		if (has_type < 0)
@@ -1048,7 +1048,7 @@ static struct base_data *resolve_delta(struct object_entry *delta_obj,
 {
 	void *delta_data, *result_data;
 	struct base_data *result;
-	unsigned long result_size;
+	size_t result_size;
 
 	if (show_stat) {
 		int i = delta_obj - objects;
@@ -1212,7 +1212,6 @@ static void *threaded_second_pass(void *data)
 			list_add(&child->list, &work_head);
 			base_cache_used += child->size;
 			prune_base_data(NULL);
-			free_base_data(child);
 		} else if (child) {
 			/*
 			 * This child does not have its own children. It may be
@@ -1417,8 +1416,9 @@ static int write_compressed(struct hashfile *f, void *in, unsigned int size)
 	git_zstream stream;
 	int status;
 	unsigned char outbuf[4096];
+	struct repo_config_values *cfg = repo_config_values(the_repository);
 
-	git_deflate_init(&stream, zlib_compression_level);
+	git_deflate_init(&stream, cfg->zlib_compression_level);
 	stream.next_in = in;
 	stream.avail_in = size;
 
@@ -1515,7 +1515,7 @@ static void fix_unresolved_deltas(struct hashfile *f)
 		struct ref_delta_entry *d = sorted_by_pos[i];
 		enum object_type type;
 		void *data;
-		unsigned long size;
+		size_t size;
 
 		if (objects[d->obj_no].real_type != OBJ_REF_DELTA)
 			continue;
