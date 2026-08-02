@@ -412,7 +412,7 @@ static int worktree_prune_condition(struct gc_config *cfg)
 	while (limit && (d = readdir_skip_dot_and_dotdot(dir))) {
 		char *wtpath;
 		strbuf_reset(&buf);
-		if (should_prune_worktree(d->d_name, &buf, &wtpath, expiry_date))
+		if (should_prune_worktree(the_repository, d->d_name, &buf, &wtpath, expiry_date))
 			limit--;
 		free(wtpath);
 	}
@@ -902,7 +902,7 @@ int cmd_gc(int argc,
 		die(_("failed to parse gc.logExpiry value %s"), cfg.gc_log_expire);
 
 	if (cfg.pack_refs < 0)
-		cfg.pack_refs = !is_bare_repository();
+		cfg.pack_refs = !is_bare_repository(the_repository);
 
 	argc = parse_options(argc, argv, prefix, builtin_gc_options,
 			     builtin_gc_usage, 0);
@@ -1790,7 +1790,7 @@ static int maintenance_run_tasks(struct maintenance_run_opts *opts,
 	struct repository *r = the_repository;
 	char *lock_path = xstrfmt("%s/maintenance", r->objects->sources->path);
 
-	if (hold_lock_file_for_update(&lk, lock_path, LOCK_NO_DEREF) < 0) {
+	if (repo_hold_lock_file_for_update(r, &lk, lock_path, LOCK_NO_DEREF) < 0) {
 		/*
 		 * Another maintenance command is running.
 		 *

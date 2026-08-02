@@ -150,8 +150,8 @@ static struct remote *make_remote(struct remote_state *remote_state,
 	ret->prune = -1;  /* unspecified */
 	ret->prune_tags = -1;  /* unspecified */
 	ret->name = xstrndup(name, len);
-	refspec_init_push(&ret->push);
-	refspec_init_fetch(&ret->fetch);
+	refspec_init_push(&ret->push, the_hash_algo);
+	refspec_init_fetch(&ret->fetch, the_hash_algo);
 	string_list_init_dup(&ret->server_options);
 	string_list_init_dup(&ret->negotiation_restrict);
 	string_list_init_dup(&ret->negotiation_include);
@@ -1933,7 +1933,7 @@ static char *branch_get_push_1(struct repository *repo,
 	if (remote->mirror)
 		return tracking_for_push_dest(remote, branch->refname, err);
 
-	switch (push_default) {
+	switch (repo_config_values(repo)->push_default) {
 	case PUSH_DEFAULT_NOTHING:
 		return error_buf(err, _("push has no destination (push.default is 'nothing')"));
 
@@ -2315,6 +2315,8 @@ static void format_branch_comparison(struct strbuf *sb,
 				     bool up_to_date,
 				     int ours, int theirs,
 				     const char *branch_name,
+				     const char *push_remote_name,
+				     const char *push_branch_name,
 				     enum ahead_behind_flags abf,
 				     unsigned flags)
 {
@@ -2350,9 +2352,15 @@ static void format_branch_comparison(struct strbuf *sb,
 			       "and can be fast-forwarded.\n",
 			   theirs),
 			branch_name, theirs);
-		if (use_pull_advice && advice_enabled(ADVICE_STATUS_HINTS))
-			strbuf_addstr(sb,
-				_("  (use \"git pull\" to update your local branch)\n"));
+		if (use_pull_advice && advice_enabled(ADVICE_STATUS_HINTS)) {
+			if (push_remote_name && push_branch_name)
+				strbuf_addf(sb,
+					_("  (use \"git pull %s %s\" to update your local branch)\n"),
+					push_remote_name, push_branch_name);
+			else
+				strbuf_addstr(sb,
+					_("  (use \"git pull\" to update your local branch)\n"));
+		}
 	} else {
 		strbuf_addf(sb,
 			Q_("Your branch and '%s' have diverged,\n"
@@ -2363,9 +2371,15 @@ static void format_branch_comparison(struct strbuf *sb,
 			       "respectively.\n",
 			   ours + theirs),
 			branch_name, ours, theirs);
-		if (use_divergence_advice && advice_enabled(ADVICE_STATUS_HINTS))
-			strbuf_addstr(sb,
-				_("  (use \"git pull\" if you want to integrate the remote branch with yours)\n"));
+		if (use_divergence_advice && advice_enabled(ADVICE_STATUS_HINTS)) {
+			if (push_remote_name && push_branch_name)
+				strbuf_addf(sb,
+					_("  (use \"git pull %s %s\" if you want to integrate the remote branch with yours)\n"),
+					push_remote_name, push_branch_name);
+			else
+				strbuf_addstr(sb,
+					_("  (use \"git pull\" if you want to integrate the remote branch with yours)\n"));
+		}
 	}
 }
 
@@ -2403,6 +2417,8 @@ int format_tracking_info(struct branch *branch, struct strbuf *sb,
 		int ours, theirs, cmp;
 		int is_upstream, is_push;
 		unsigned flags = 0;
+		const char *push_remote_name = NULL;
+		const char *push_branch_name = NULL;
 
 		full_ref = resolve_compare_branch(branch,
 						  branches.items[i].string);
@@ -2446,11 +2462,27 @@ int format_tracking_info(struct branch *branch, struct strbuf *sb,
 
 		if (is_upstream)
 			flags |= ENABLE_ADVICE_PULL;
-		if (is_push)
-			flags |= ENABLE_ADVICE_PUSH;
 		if (show_divergence_advice && is_upstream)
 			flags |= ENABLE_ADVICE_DIVERGENCE;
+		if (is_push) {
+			flags |= ENABLE_ADVICE_PUSH;
+			if (!upstream_ref || strcmp(upstream_ref, full_ref)) {
+				push_remote_name = pushremote_for_branch(branch, NULL);
+				if (push_remote_name &&
+				    skip_prefix(full_ref, "refs/remotes/", &push_branch_name) &&
+				    skip_prefix(push_branch_name, push_remote_name, &push_branch_name) &&
+				    *push_branch_name == '/') {
+					push_branch_name++;
+					flags |= ENABLE_ADVICE_PULL;
+				} else {
+					push_remote_name = NULL;
+				}
+			} else {
+				flags |= ENABLE_ADVICE_PULL;
+			}
+		}
 		format_branch_comparison(sb, !cmp, ours, theirs, short_ref,
+					 push_remote_name, push_branch_name,
 					 abf, flags);
 		reported = 1;
 
@@ -2681,6 +2713,8 @@ static int remote_tracking(struct remote *remote, const char *refname,
 {
 	char *dst;
 
+	if (!remote)
+		BUG("remote_tracking() called with NULL remote");
 	dst = apply_refspecs(&remote->fetch, refname);
 	if (!dst)
 		return -1; /* no tracking ref for refname at remote */
@@ -3007,7 +3041,7 @@ int valid_remote_name(const char *name)
 	int result;
 	struct strbuf refspec = STRBUF_INIT;
 	strbuf_addf(&refspec, "refs/heads/test:refs/remotes/%s/test", name);
-	result = valid_fetch_refspec(refspec.buf);
+	result = valid_fetch_refspec(refspec.buf, the_hash_algo);
 	strbuf_release(&refspec);
 	return result;
 }
